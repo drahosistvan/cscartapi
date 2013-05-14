@@ -9,7 +9,7 @@ if (!function_exists('json_decode')) {
 
 class CSCartApi {
 
-    const VERSION = '0.1';
+    const VERSION = '0.1 beta';
     
     const ERROR_API_CALLING = 'You have to specify a method (eg. POST, PUT, ...) and a correct object url to call the API';
     const ERROR_CURL_ERROR = 'HTTP error while calling the API. Error code and message: ';
