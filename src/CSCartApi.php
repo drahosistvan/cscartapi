@@ -10,6 +10,10 @@ if (!function_exists('json_decode')) {
 class CSCartApi {
 
     const VERSION = '0.1';
+    
+    const ERROR_API_CALLING = 'You have to specify a method (eg. POST, PUT, ...) and a correct object url to call the API';
+    const ERROR_CURL_ERROR = 'HTTP error while calling the API. Error code and message: ';
+    const ERROR_CSCART_API_MESSAGE = 'Message from CS-Cart API: ';
 
     public static $CURL_OPTS = array(
         CURLOPT_CONNECTTIMEOUT => 10,
@@ -36,7 +40,7 @@ class CSCartApi {
     }
 
     public function setApiUrl($apiUrl) {
-        $this->apiUrl = trim($apiUrl, '/');
+        $this->apiUrl = $apiUrl;
     }
 
     public function getApiKey() {
@@ -51,81 +55,110 @@ class CSCartApi {
         return $this->apiUrl;
     }
 
-    public function api($method, $path, $data = '') {
-        if (isset($method) && isset($path) && !empty($method) && !empty($path)) {
-            return $this->makeRequest($path, $method, $data);
+    public function api($method, $objectUrl, $data = '', $params = array()) {
+        if (!empty($method) && !empty($objectUrl)) {
+            return $this->makeRequest($objectUrl, $method, $data, $params);
         } else {
-            // error
+            throw new Exception(self::ERROR_API_CALLING);
         }
     }
 
-    protected function makeRequest($url, $method, $data = '', $ch = null) {
-        if (!$ch) {
-            $ch = curl_init();
-        }
+    protected function makeRequest($objectUrl, $method, $data = '', $params = array()) {
+        $ch = curl_init();
 
         $opts = self::$CURL_OPTS;
-        //$opts[CURLOPT_POSTFIELDS] = http_build_query($params, null, '&');
+        
+        $params['q'] = $objectUrl;
+        
+        $opts[CURLOPT_URL] = $this->initUrl($params);
+        $opts[CURLOPT_USERPWD] = $this->getAuthString();
+        //die($this->initUrl($params));
+        $this->setHeader($opts, 'Content-Type: application/json');
 
-        $opts[CURLOPT_URL] = $this->apiUrl . $url;
-
-        if (isset($opts[CURLOPT_HTTPHEADER])) {
-            $existing_headers = $opts[CURLOPT_HTTPHEADER];
-            $existing_headers[] = 'Expect:';
-            $opts[CURLOPT_HTTPHEADER] = $existing_headers;
+        if ($method == 'POST' || $method == 'PUT') {
+            $postdata = $this->generatePostData($data);
         } else {
-            $opts[CURLOPT_HTTPHEADER] = array('Expect:');
+            unset($data);
         }
-        $authString = $this->userLogin . ":" . $this->apiKey;
-        //$authToken = base64_encode($authString);
-        $headers = array(
-            'Content-Type: application/json'
-        );
-        //print $header."<br/>".$authString;
-        //die();
-        curl_setopt($ch, CURLOPT_USERPWD, $authString);
-        //curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
 
-        if (is_array($data)) {
-            $postdata = json_encode($data);
-        } else {
-            $postdata = $data;
-        }
-        curl_setopt_array($ch, $opts);
-        //die($postdata);
         switch ($method) {
             case 'GET':
                 break;
             case 'POST':
-                curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'POST');
-                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-                curl_setopt($ch, CURLOPT_POSTFIELDS, $postdata);
-                curl_setopt($ch, CURLOPT_HTTPHEADER, array(
-                    'Content-Type: application/json',
-                    'Content-Length: ' . strlen($postdata))
-                );
+                $opts[CURLOPT_CUSTOMREQUEST] = 'POST';
+                $opts[CURLOPT_RETURNTRANSFER] = TRUE;
+                $opts[CURLOPT_POSTFIELDS] = $postdata;
+                $this->setHeader($opts, 'Content-Length: ' . strlen($postdata));
                 break;
             case 'PUT':
-                curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PUT');
-                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-                curl_setopt($ch, CURLOPT_POSTFIELDS, $postdata);
-                curl_setopt($ch, CURLOPT_HTTPHEADER, array(
-                    'Content-Type: application/json',
-                    'Content-Length: ' . strlen($postdata))
-                );
+                $opts[CURLOPT_CUSTOMREQUEST] = 'PUT';
+                $opts[CURLOPT_RETURNTRANSFER] = TRUE;
+                $opts[CURLOPT_POSTFIELDS] = $postdata;
+                $this->setHeader($opts, 'Content-Length: ' . strlen($postdata));
                 break;
             case 'DELETE':
-                curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'DELETE');
-                curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/json'));
+                $opts[CURLOPT_CUSTOMREQUEST] = 'DELETE';
                 break;
         }
 
-
+        curl_setopt_array($ch, $opts);
         $result = curl_exec($ch);
 
-
+        if ($result === false) {
+            curl_close($ch);
+            throw new Exception(self::ERROR_CURL_ERROR.curl_errno($ch).': '.curl_error($ch));  
+        }
         curl_close($ch);
-        return $result;
+        return $this->parseResult($result);
+    }
+    
+    protected function initUrl($params){
+        return $this->apiUrl.'api.php?'.http_build_query($params);
+    }
+
+    protected function getAuthString() {
+        return $this->userLogin . ":" . $this->apiKey;
+    }
+
+    protected function setHeader(&$opts, $headerString) {
+        $opts[CURLOPT_HTTPHEADER][] = $headerString;
+    }
+
+    protected function generatePostData($data) {
+        return json_encode($data);
+    }
+    
+    protected function parseResult($jsonResult){
+        $result = (array)json_decode($jsonResult);
+        if (!empty($result['message'])) {
+            throw new Exception(self::ERROR_CSCART_API_MESSAGE.$result['message']);
+        } else {
+          return $result;
+        }
+    }
+    
+    public function get($objectUrl, $params){
+        return $this->makeRequest($objectUrl, 'GET', '', $params);
+    }
+
+    public function update($objectUrl, $data){
+        return $this->makeRequest($objectUrl, 'PUT', $data);
+    }
+
+    public function create($objectUrl, $data){
+        return $this->makeRequest($objectUrl, 'POST', $data);
+    }
+    
+    public function delete($objectUrl){
+        return $this->makeRequest($objectUrl, 'DELETE');
+    }
+    
+    public function getApiVersion(){
+        return self::VERSION;
+    }
+    
+    public function getCartVersion(){
+        return str_replace("CS-Cart: version ","",strip_tags(file_get_contents($this->apiUrl.'?version')));
     }
 
 }
