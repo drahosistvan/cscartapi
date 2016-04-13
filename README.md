@@ -35,15 +35,21 @@ After you have these parameters, you can make API calls easily:
         )
     );
 
-    try {
-        $params = array(
-            'status' => "A"
-        );
-        $products = $cscartapi->get("products/1", $params);
-        print_r($products);
-    } catch (Exception $e) {
-        print $e->getMessage();
-    }
+	try {
+	    $usergroups = $cscartapi->get("usergroups" );
+	    print_r($usergroups);
+	    
+	    $data = array(
+		    company_id => 3,
+		    user_type => 'C',
+		    email => 'ao@cscart4beta2.loc'
+	    );
+	    $user = $cscartapi->create("users", $data );
+	    print_r($user);
+	    
+	} catch (Exception $e) {
+	    print $e->getMessage();
+	}
 
 You have 5 main methods: api(), get(), update(), create(), delete()
 
