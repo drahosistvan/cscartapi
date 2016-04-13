@@ -28,7 +28,7 @@ class CSCartApi {
     public function __construct($config) {
         $this->setUserLogin($config['user_login']);
         $this->setApiKey($config['api_key']);
-        $this->setApiUrl($config['api_url']);
+        $this->setApiUrl($config['api_url'].'/api/');
     }
 
     public function setApiKey($apiKey) {
@@ -68,12 +68,11 @@ class CSCartApi {
 
         $opts = self::$CURL_OPTS;
         
-        $params['q'] = $objectUrl;
-        
-        $opts[CURLOPT_URL] = $this->initUrl($params);
+        $opts[CURLOPT_URL] = $this->initUrl($objectUrl, $params);
         $opts[CURLOPT_USERPWD] = $this->getAuthString();
         //die($this->initUrl($params));
         $this->setHeader($opts, 'Content-Type: application/json');
+
 
         if ($method == 'POST' || $method == 'PUT') {
             $postdata = $this->generatePostData($data);
@@ -112,8 +111,11 @@ class CSCartApi {
         return $this->parseResult($result);
     }
     
-    protected function initUrl($params){
-        return $this->apiUrl.'api.php?'.http_build_query($params);
+    protected function initUrl($objectUrl, $params)
+    {
+        $params = http_build_query($params);
+        $params = $params? '?'.$params:'';
+        return $this->apiUrl . $objectUrl . $params;
     }
 
     protected function getAuthString() {

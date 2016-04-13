@@ -13,11 +13,17 @@ $cscartapi = new CSCartApi(
 print "<pre>";
 
 try {
-    $params = array(
-        'status' => "A"
+    $usergroups = $cscartapi->get("usergroups" );
+    print_r($usergroups);
+    
+    $data = array(
+	    company_id => 3,
+	    user_type => 'C',
+	    email => 'ao@cscart4beta2.loc'
     );
-    $products = $cscartapi->get("products/1", $params);
-    print_r($products);
+    $user = $cscartapi->create("users", $data );
+    print_r($user);
+    
 } catch (Exception $e) {
     print $e->getMessage();
 }
