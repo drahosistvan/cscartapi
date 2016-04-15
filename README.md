@@ -1,10 +1,12 @@
-CS-Cart API Class (v 1.0.0)
+CS-Cart API Class (v 1.0.x)
 
 What is this?
 =========
 
 [CS-Cart](http://cs-cart.com/) is a wonderful open source Shopping Cart software.
-This is an API wrapper class for CS-Cart v4.x API.
+This is an API wrapper class for CS-Cart v4.x API. With this tool, you can start requesting a CS-Cart store easily, and fast.
+
+You can find more information about the CS-Cart API [here](http://docs.cs-cart.com/4.3.x/developer_guide/api/index.html).
 
 Usage
 =========
