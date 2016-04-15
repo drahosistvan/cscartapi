@@ -1,2 +1,4 @@
 /nbproject/
+.idea/
+examples/tester.php
 .DS_Store

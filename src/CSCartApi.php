@@ -104,8 +104,8 @@ class CSCartApi {
         $result = curl_exec($ch);
 
         if ($result === false) {
+            throw new Exception(self::ERROR_CURL_ERROR.curl_errno($ch).': '.curl_error($ch));
             curl_close($ch);
-            throw new Exception(self::ERROR_CURL_ERROR.curl_errno($ch).': '.curl_error($ch));  
         }
         curl_close($ch);
         return $this->parseResult($result);
