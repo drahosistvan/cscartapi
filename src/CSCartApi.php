@@ -9,8 +9,8 @@ if (!function_exists('json_decode')) {
 
 class CSCartApi {
 
-    const VERSION = '0.1 beta';
-    
+    const VERSION = '0.2';
+
     const ERROR_API_CALLING = 'You have to specify a method (eg. POST, PUT, ...) and a correct object url to call the API';
     const ERROR_CURL_ERROR = 'HTTP error while calling the API. Error code and message: ';
     const ERROR_CSCART_API_MESSAGE = 'Message from CS-Cart API: ';
@@ -40,7 +40,7 @@ class CSCartApi {
     }
 
     public function setApiUrl($apiUrl) {
-        $this->apiUrl = $apiUrl;
+        $this->apiUrl = trim($apiUrl, '/').'/api/';
     }
 
     public function getApiKey() {
@@ -68,12 +68,11 @@ class CSCartApi {
 
         $opts = self::$CURL_OPTS;
         
-        $params['q'] = $objectUrl;
-        
-        $opts[CURLOPT_URL] = $this->initUrl($params);
+        $opts[CURLOPT_URL] = $this->initUrl($objectUrl, $params);
         $opts[CURLOPT_USERPWD] = $this->getAuthString();
         //die($this->initUrl($params));
         $this->setHeader($opts, 'Content-Type: application/json');
+
 
         if ($method == 'POST' || $method == 'PUT') {
             $postdata = $this->generatePostData($data);
@@ -112,8 +111,11 @@ class CSCartApi {
         return $this->parseResult($result);
     }
     
-    protected function initUrl($params){
-        return $this->apiUrl.'api.php?'.http_build_query($params);
+    protected function initUrl($objectUrl, $params)
+    {
+        $params = http_build_query($params);
+        $params = $params? '?'.$params:'';
+        return $this->apiUrl . $objectUrl . $params;
     }
 
     protected function getAuthString() {
