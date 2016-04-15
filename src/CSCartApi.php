@@ -9,8 +9,8 @@ if (!function_exists('json_decode')) {
 
 class CSCartApi {
 
-    const VERSION = '0.1 beta';
-    
+    const VERSION = '0.2';
+
     const ERROR_API_CALLING = 'You have to specify a method (eg. POST, PUT, ...) and a correct object url to call the API';
     const ERROR_CURL_ERROR = 'HTTP error while calling the API. Error code and message: ';
     const ERROR_CSCART_API_MESSAGE = 'Message from CS-Cart API: ';
@@ -28,7 +28,7 @@ class CSCartApi {
     public function __construct($config) {
         $this->setUserLogin($config['user_login']);
         $this->setApiKey($config['api_key']);
-        $this->setApiUrl($config['api_url'].'/api/');
+        $this->setApiUrl($config['api_url']);
     }
 
     public function setApiKey($apiKey) {
@@ -40,7 +40,7 @@ class CSCartApi {
     }
 
     public function setApiUrl($apiUrl) {
-        $this->apiUrl = $apiUrl;
+        $this->apiUrl = trim($apiUrl, '/').'/api/';
     }
 
     public function getApiKey() {
