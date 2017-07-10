@@ -139,7 +139,7 @@ class CSCartApi {
         }
     }
     
-    public function get($objectUrl, $params){
+    public function get($objectUrl, $params = array()){
         return $this->makeRequest($objectUrl, 'GET', '', $params);
     }
 
